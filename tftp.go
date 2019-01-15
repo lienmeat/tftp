@@ -54,9 +54,9 @@ type TFTPProtocolHandler struct {
 	writeTransfers *WriteTransferRepo
 }
 
-func NewTFTPProtocolHandler() *TFTPProtocolHandler {
+func NewTFTPProtocolHandler(minPort int32, maxPort int32) *TFTPProtocolHandler {
 	return &TFTPProtocolHandler{
-		TIDs:           NewTIDRepo(6000, 9000),
+		TIDs:           NewTIDRepo(minPort, maxPort),
 		Files:          NewFileRepo(),
 		writeTransfers: NewWriteTransferRepo(),
 	}

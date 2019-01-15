@@ -15,13 +15,15 @@ import (
 
 func main() {
 	address := flag.String("address", "", "IP address and port to use (ex: 0.0.0.0:69)")
+	minPort := flag.Int("minPort", 6000, "minimum port to use for transfers (TIDs)")
+	maxPort := flag.Int("maxPort", 9000, "maximum port to use for transfers (TIDs)")
 	logLevel := flag.String("logLevel", "info", "logging level (trace, debug, info, warn, error, panic, fatal)")
 	logFile := flag.String("logFile", "", "log file, if not set, will log to stdOut")
 	requestLogFile := flag.String("requestsLogFile", "tftp_requests.log", "requests log file, if not set, will log to tftp_requests.log")
 	traceFile := flag.String("traceFile", "", "trace execution to file")
 	flag.Parse()
 
-	if *address == "" {
+	if *address == "" || *minPort == 0 || *maxPort == 0 {
 		flag.Usage()
 		return
 	}
@@ -67,7 +69,7 @@ func main() {
 	}
 	defer rlf.Close()
 
-	if err := udpserver.Server(ctx, *address, tftp.NewTFTPProtocolHandler()); err != nil {
+	if err := udpserver.Server(ctx, *address, tftp.NewTFTPProtocolHandler(int32(*minPort), int32(*maxPort))); err != nil {
 		panic(err)
 	}
 }
