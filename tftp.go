@@ -161,19 +161,12 @@ func processPacket(files *FileRepo, transfer *Transfer, writeTransfers *WriteTra
 			}).Infof("get %s transfer requested", r.Filename)
 			return processOpRRQ(files, transfer, r)
 		}
-		if writeTransfers.CanWrite(r.Filename) {
-			RequestLog.WithFields(log.Fields{
-				"filename": r.Filename,
-				"address":  raw.Address(),
-				"op":       "put",
-			}).Infof("put %s transfer requested", r.Filename)
-			return processOpWRQ(transfer, r)
-		} else {
-			return &PacketError{
-				Msg:  "Write already in progress for " + r.Filename,
-				Code: 6,
-			}
-		}
+		RequestLog.WithFields(log.Fields{
+			"filename": r.Filename,
+			"address":  raw.Address(),
+			"op":       "put",
+		}).Infof("put %s transfer requested", r.Filename)
+		return processOpWRQ(transfer, writeTransfers, r)
 	case *PacketAck:
 		return processOpAck(transfer, p.(*PacketAck))
 	case *PacketData:
@@ -224,12 +217,19 @@ func processOpRRQ(files *FileRepo, transfer *Transfer, r *PacketRequest) (respon
 	return
 }
 
-func processOpWRQ(transfer *Transfer, r *PacketRequest) (response Packet) {
-	if transfer.Op == 0 && transfer.Block == 0 {
-		transfer.Op = r.Op
-		transfer.File.Filename = r.Filename
-		transfer.Block = 1
-		response = &PacketAck{BlockNum: 0}
+func processOpWRQ(transfer *Transfer, writeTransfers *WriteTransferRepo, r *PacketRequest) (response Packet) {
+	if writeTransfers.CanWrite(r.Filename) {
+		if transfer.Op == 0 && transfer.Block == 0 {
+			transfer.Op = r.Op
+			transfer.File.Filename = r.Filename
+			transfer.Block = 1
+			response = &PacketAck{BlockNum: 0}
+		}
+	} else {
+		response = &PacketError{
+			Msg:  "Write already in progress for " + r.Filename,
+			Code: 6,
+		}
 	}
 	return
 }
